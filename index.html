@@ -14,7 +14,7 @@ Code licensed under GPL 3.0 or any later version.
           --color: #fff;
           --color-faint: #999;
         }
-        body {
+        body, textarea {
           background-color: var(--background);
           color: var(--color);
         }
@@ -34,12 +34,24 @@ Code licensed under GPL 3.0 or any later version.
         button:active {
           filter: brightness(80%);
         }
+        textarea {
+          border: thin solid var(--color-faint);
+        }
       }
     </style>
   </head>
   <body>
-    <p>This still has nothing. Perhaps press this button while you wait?: <button id="button">Button</button></p>
-    <span id="display"></span>
+    <h1>Bytebeat <s>player</s> parser (bad)</h1>
+    <noscript><h2>requires javascript to run!</h2></noscript>
+    <textarea id="code"></textarea>
+    <div><button id="compile">Compile</button></div>
+    <details>
+      <summary>Compilation details</summary>
+      <div id="compdetails">
+        <p>has not compiled yet. if you already clicked the compile button, cause might be that the javascript didn't load.</p>
+      </div>
+      <hr>
+    </details>
     <p>Want to report a bug/other thing? Do so at <a href="https://github.com/jan-ale/bytebeat-libre/issues">my github issues page</a>.</p>
     <p>&copy; Copyright 2024, jan-ale on github.</p>
     <p>Code licensed under GPL 3.0 or any later version.</p>
