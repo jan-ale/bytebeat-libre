@@ -11,18 +11,23 @@ LEX_STATES.T = null;
 LEX_STATES.START = null;
 LEX_STATES.LEFT_PAREN = null;
 LEX_STATES.RIGHT_PAREN = null;
+LEX_STATES.SHL = null; //corresponds to parsing first character of shift left (<<)
+LEX_STATES.SHR = null; //corresponds to parsing first character of shift right (>>)
+LEX_STATES.UNARY = null;
 const TOKENS = {};
 TOKENS.NUMBER = null;
 TOKENS.OPERATOR = null;
 TOKENS.LEFT_PAREN = null;
 TOKENS.RIGHT_PAREN = null;
 TOKENS.T = null;
+TOKENS.UNARY = null;
 function enumify(obj) {
   let id = 0;
   for(let val in obj) {
     obj[val] = id;
     id++;
   }
+  Object.freeze(obj);
 }
 function invertEnum(obj) {
   const inverted = {};
@@ -34,7 +39,8 @@ function invertEnum(obj) {
 enumify(LEX_STATES);
 enumify(TOKENS);
 function lex(text) {
-  const OPERATORS = ["+", "-", "*", "/", "&", "|", "^", "%"];
+  const OPERATORS = ["+", "-", "*", "/", "&", "|", "^", "%"]; //>> and << also supported
+  const UNARIES = ["-"];
   const NUMBERS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
   const tokens = [];
   let state = LEX_STATES.START;
@@ -45,53 +51,65 @@ function lex(text) {
         if(NUMBERS.includes(text[i])) {
           break;
         }
+        tokens.push({type: TOKENS.NUMBER, value: text.slice(tokenStart, i)});
+        tokenStart = i;
         if(OPERATORS.includes(text[i])) {
-          tokens.push({type: TOKENS.NUMBER, value: text.slice(tokenStart, i)});
-          tokenStart = i;
           state = LEX_STATES.OPERATOR;
           break;
         }
+        if(text[i]==="<") {
+          state = LEX_STATES.SHL;
+          break;
+        }
+        if(text[i]===">") {
+          state = LEX_STATES.SHR;
+          break;
+        }
         if(text[i]===")") {
-          tokens.push({type: TOKENS.NUMBER, value: text.slice(tokenStart, i)});
-          tokenStart = i;
           state = LEX_STATES.RIGHT_PAREN;
           break;
         }
-        throw `Lexing error at char ${i}: Expected either a digit or an operator after a number. Got "${text[i]}"`;
+        throw `Lexing error at char ${i}: Expected either a digit or an operator after a number, got "${text[i]}"`;
       case LEX_STATES.T:
+        tokens.push({type: TOKENS.T, value: "t"});
+        tokenStart = i;
         if(OPERATORS.includes(text[i])) {
-          tokens.push({type: TOKENS.T, value: "t"});
-          tokenStart = i;
           state = LEX_STATES.OPERATOR;
           break;
         }
+        if(text[i]==="<") {
+          state = LEX_STATES.SHL;
+          break;
+        }
+        if(text[i]===">") {
+          state = LEX_STATES.SHR;
+          break;
+        }
         if(text[i]===")") {
-          tokens.push({type: TOKENS.T, value: "t"});
-          tokenStart = i;
           state = LEX_STATES.RIGHT_PAREN;
           break;
         }
-        throw `Lexing error at char ${i}: Expected either a digit or an operator after a number. Got "${text[i]}"`;
+        throw `Lexing error at char ${i}: Expected an operator after "t", got "${text[i]}"`;
       case LEX_STATES.OPERATOR:
+        tokens.push({type: TOKENS.OPERATOR, value: text.slice(tokenStart, i)});
+        tokenStart = i;
         if(NUMBERS.includes(text[i])) {
-          tokens.push({type: TOKENS.OPERATOR, value: text.slice(tokenStart, i)});
-          tokenStart = i;
           state = LEX_STATES.NUMBER;
           break;
         }
         if(text[i]==="t") {
-          tokens.push({type: TOKENS.OPERATOR, value: text.slice(tokenStart, i)});
-          tokenStart = i;
           state = LEX_STATES.T;
           break;
         }
         if(text[i]==="(") {
-          tokens.push({type: TOKENS.OPERATOR, value: text.slice(tokenStart, i)});
-          tokenStart = i;
           state = LEX_STATES.LEFT_PAREN;
           break;
         }
-        throw `Lexing error at char ${i}: Expected number after operator. Got "${text[i]}"`;
+        if(UNARIES.includes(text[i])) {
+          state = LEX_STATES.UNARY;
+          break;
+        }
+        throw `Lexing error at char ${i}: Expected number after operator, got "${text[i]}"`;
       case LEX_STATES.START:
         if(NUMBERS.includes(text[i])) {
           state = LEX_STATES.NUMBER;
@@ -105,29 +123,75 @@ function lex(text) {
           state = LEX_STATES.LEFT_PAREN;
           break;
         }
-        throw `Lexing error at beginning: Expected number or opening parenthesis. Got "${text[i]}"`;
+        if(UNARIES.includes(text[i])) {
+          state = LEX_STATES.UNARY;
+          break;
+        }
+        throw `Lexing error at beginning: Expected number or opening parenthesis, got "${text[i]}"`;
       case LEX_STATES.LEFT_PAREN:
+        tokens.push({type: TOKENS.LEFT_PAREN, value: "("});
+        tokenStart = i;
         if(NUMBERS.includes(text[i])) {
-          tokens.push({type: TOKENS.LEFT_PAREN, value: "("});
-          tokenStart = i;
           state = LEX_STATES.NUMBER;
           break;
         }
         if(text[i]==="t") {
-          tokens.push({type: TOKENS.LEFT_PAREN, value: text.slice(tokenStart, i)});
-          tokenStart = i;
           state = LEX_STATES.T;
           break;
         }
-        throw `Lexing error at char ${i}: Expected number after opening parenthesis. Got "${text[i]}"`;
+        if(text[i]==="(") {
+          state = LEX_STATES.LEFT_PAREN;
+          break;
+        }
+        if(UNARIES.includes(text[i])) {
+          state = LEX_STATES.UNARY;
+          break;
+        }
+        throw `Lexing error at char ${i}: Expected number after opening parenthesis, got "${text[i]}"`;
       case LEX_STATES.RIGHT_PAREN:
+        tokens.push({type: TOKENS.RIGHT_PAREN, value: ")"});
+        tokenStart = i;
         if(OPERATORS.includes(text[i])) {
-          tokens.push({type: TOKENS.RIGHT_PAREN, value: ")"});
-          tokenStart = i;
           state = LEX_STATES.OPERATOR;
           break;
         }
-        throw `Lexing error at char ${i}: Expected operator after closing parenthesis. Got "${text[i]}"`;
+        if(text[i]==="<") {
+          state = LEX_STATES.SHL;
+          break;
+        }
+        if(text[i]===">") {
+          state = LEX_STATES.SHR;
+          break;
+        }
+        throw `Lexing error at char ${i}: Expected operator after closing parenthesis, got "${text[i]}"`;
+      case LEX_STATES.SHL:
+        if(text[i]=="<") {
+          state = LEX_STATES.OPERATOR;
+          break;
+        }
+        throw `Lexing error at char ${i}: Expected shift left, got "${text[i]}"`;
+      case LEX_STATES.SHR:
+        if(text[i]==">") {
+          state = LEX_STATES.OPERATOR;
+          break;
+        }
+        throw `Lexing error at char ${i}: Expected shift right, got "${text[i]}"`;
+      case LEX_STATES.UNARY:
+        tokens.push({type: TOKENS.UNARY, value: text.slice(tokenStart, i)});
+        tokenStart = i;
+        if(NUMBERS.includes(text[i])) {
+          state = LEX_STATES.NUMBER;
+          break;
+        }
+        if(text[i]==="t") {
+          state = LEX_STATES.T;
+          break;
+        }
+        if(text[i]==="(") {
+          state = LEX_STATES.LEFT_PAREN;
+          break;
+        }
+        throw `Lexing error at char ${i}: Expected number after unary operator, got ${text[i]}`
       default:
         const INVERTED_STATES = invertEnum(LEX_STATES);
         throw `Lexing error at char ${i} (bug is in my code): Somehow got to an unknown/unhandled state. State name: ${INVERTED_STATES[state]}, Enum value: ${state}`;
@@ -159,10 +223,12 @@ const AST_TYPES = {};
 AST_TYPES.OPERATOR = null;
 AST_TYPES.NUMBER = null;
 AST_TYPES.T = null;
+AST_TYPES.UNARY = null;
 enumify(AST_TYPES);
 function parseLevel(tokens, level, start) { //recursive descent precendence climbing //start only affects error reporting, is where it is in the original list of tokens
   //console.log(`Parsing tokens:\n${tokensToText(tokens)}\nlevel: ${level}, start: ${start}`); //helpful for debugging
-  const LEVELS = [["+","-"],["*","/"]]; //higher precedence on right
+  // from https://en.cppreference.com/w/c/language/operator_precedence
+  const LEVELS = [["|"],["^"],["&"],[">>","<<"],["+","-"],["*","/","%"]]; //higher precedence on right
   if(level == LEVELS.length) {
     if(tokens.length == 0) {
       throw `Parsing error at token ${start}: Empty statement`;
@@ -183,6 +249,13 @@ function parseLevel(tokens, level, start) { //recursive descent precendence clim
     }
     if(tokens[0].type == TOKENS.LEFT_PAREN && tokens[tokens.length-1].type == TOKENS.RIGHT_PAREN) {
       return parseLevel(tokens.slice(1,-1), 0, start+1);
+    }
+    if(tokens[0].type == TOKENS.UNARY) {
+      return {
+        type: AST_TYPES.UNARY,
+        operator: tokens[0].value,
+        operand: parseLevel(tokens.slice(1), 0, start+1)
+      };
     }
     throw `Parsing error at token ${start} (bug is in my code): Weird terminal parse tokens:\n${tokensToText(tokens)}`;
   }
@@ -219,6 +292,7 @@ function parseLevel(tokens, level, start) { //recursive descent precendence clim
         break;
       case TOKENS.NUMBER:
       case TOKENS.T:
+      case TOKENS.UNARY:
         break;
       default:
         const INVERTED_TOKENS = invertEnum(TOKENS);
@@ -262,6 +336,11 @@ ${indent})`;
       return `${tree.value}`;
     case AST_TYPES.T:
       return `t`;
+    case AST_TYPES.UNARY:
+      return `(
+${indent}  ${tree.operator}
+${indent}  ${ASTToTextIndent(tree.operand,indent+"  ")}
+${indent})`;
     default:
       throw `Error when converting AST to text (bug is in my code): Unrecognized AST type ${invertEnum(AST_TYPES)[tree.type]}`;
   }
