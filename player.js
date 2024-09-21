@@ -349,6 +349,46 @@ ${indent})`;
       throw `Error when converting AST to text (bug is in my code): Unrecognized AST type ${invertEnum(AST_TYPES)[tree.type]}`;
   }
 }
+function ASTToJS(tree) {
+  switch(tree.type) {
+    case AST_TYPES.OPERATOR:
+      return `(${ASTToJS(tree.left)}${tree.operator}${ASTToJS(tree.right)})`;
+    case AST_TYPES.UNARY:
+      return `(${tree.operator}${ASTToJS(tree.operand)})`;
+    case AST_TYPES.OPERATOR:
+      return `${tree.value}`;
+    case AST_TYPES.T:
+      return `t`;
+    default:
+      throw `Error when converting AST to text (bug is in my code): Unrecognized AST type ${invertEnum(AST_TYPES)[tree.type]}`;
+  }
+}
+function JSToFunc(code) {
+  return Function("t","return "+code);
+}
+function wavHeader(samples, samplerate) {
+  //reference: https://en.wikipedia.org/wiki/WAV#WAV_file_header
+  const arrayBuffer = new ArrayBuffer(44);
+  const dataView = new DataView(arrayBuffer);
+  dataView.setInt32(0, 0x52494646);         //FileTypeBlocID: RIFF
+  dataView.setInt32(4, 44+samples-8, true); //FileSize
+  dataView.setInt32(8, 0x57415645);         //FileFormatID: WAVE
+  dataView.setInt32(12, 0x666D7420);        //FormatBlocID: fmt␣
+  dataView.setInt32(16, 16, true);          //BlocSize
+  dataView.setInt16(20, 1, true);           //AudioFormat
+  dataView.setInt16(22, 1, true);           //NbrChannels
+  dataView.setInt32(24, samplerate, true);  //Frequence
+  dataView.setInt32(28, samplerate, true);  //BytesPerSec
+  dataView.setInt16(32, 1, true);           //BytesPerBloc
+  dataView.setInt16(34, 8, true);           //BitsPerSample
+  dataView.setInt32(36, 0x64617461);        //DataBlocID: data
+  dataView.setInt32(40, samples, true);     //DataSize
+  return arrayBuffer;
+}
+function createUrl(header) {
+  const blob = new Blob([header],{type:"audio/wav"});
+  return URL.createObjectURL(blob);
+}
 function compile() {
   COMPILE_DETAILS.textContent = "";
   const code = CODE_BOX.value;

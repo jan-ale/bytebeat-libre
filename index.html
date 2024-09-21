@@ -7,44 +7,18 @@ Code licensed under GPL 3.0 or any later version.
   <head>
     <title>Bytebeat player</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    <style>
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --background: #222;
-          --color: #fff;
-          --color-faint: #999;
-        }
-        body, textarea {
-          background-color: var(--background);
-          color: var(--color);
-        }
-        a {
-          color: #9cf;
-        }
-        a:visited {
-          color: #f7f;
-        }
-        button {
-          border-width: thin;
-          border-style: solid;
-          border-color: var(--color-faint);
-          background-color: var(--background);
-          color: var(--color);
-        }
-        button:active {
-          filter: brightness(80%);
-        }
-        textarea {
-          border: thin solid var(--color-faint);
-        }
-      }
-    </style>
+    <meta name="color-scheme" content="light dark"> <!-- i love this -->
   </head>
   <body>
     <h1>Bytebeat <s>player</s> parser (bad)</h1>
     <noscript><h2>requires javascript to run!</h2></noscript>
     <textarea id="code"></textarea>
     <div><button id="compile">Compile</button></div>
+    <!--<details>
+      <summary>Options</summary>
+      <p>Samplerate: <input id="samplerate" type="number" min="0" value="8000"></p>
+      <p>Length: <input id="length" type="number" step="any" min="0" value="20"></p>
+    </details>-->
     <details>
       <summary>Compilation details</summary>
       <div id="compdetails">
